@@ -26,13 +26,14 @@ export class App {
         this.clickOn();
     }
 
-    show(playerName) {
+    show(IColor, youColor) {
+        var myName = this.board.I.name;
         document.getElementById("turn").innerText = `Turn : ${this.board.turn}`;
         for (var i = 0; i < this.width; i++) {
             for (var j = 0; j < this.height; j++) {
                 var cell = this.table.rows[j].cells[i];
                 cell.innerText = this.board.map[i][j];
-                setColor(cell, (this.board.map[i][j] === playerName ? 'need' : 'noNeed') + `-${this.board.map[i][j]}`);
+                setColor(cell, (this.board.map[i][j] === myName ? IColor : youColor) + `-${this.board.map[i][j]}`);
             }
         }
     }
@@ -56,25 +57,27 @@ export class App {
                 this.board.deleteBundle(I, this.bundle);
                 if (this.board.checkNoPiece(I)) {
                     this.win(you);
+                    this.show('need', 'need');
+                    return
                 } else {
                     this.bundle = this.board.findPieces(I);
                     moves = this.board.findBundleMove(I, this.bundle);
                 }
             }
-            this.show(I.name);
+            this.show('need', 'noNeed');
             this.showBundle(I.name, this.bundle);
             document.getElementById("status").innerText = `Status : ${I.name} select move`;
-            if (moves.size === 1) { alert('Choose move automatically because the valid movement is unique'); }
+            if (moves.size === 1 && document.getElementById("uniqueAlert").checked) { alert('Select move automatically because the valid move is unique'); }
             var { piece, dir } = moves.size === 1 ? [...moves][0] : await this.choose("move", [...moves]);
             this.board.movePiece(I, piece, dir);
-            if (this.board.checkBaseEnter(I)) { this.win(I); }
-            this.show(you.name);
+            if (this.board.checkBaseEnter(I)) { this.win(I); this.show('need', 'need'); return }
+            this.show('light', 'need');
             document.getElementById("status").innerText = `Status : ${I.name} select bundle`;
             var bundles = this.board.findBundles(you);
-            if (moves.size === 1) { alert('Choose bundle automatically because the bundle is unique'); }
+            if (bundles.length === 1 && document.getElementById("uniqueAlert").checked) { alert('Select bundle automatically because the bundle is unique'); }
             this.bundle = bundles.length === 1 ? bundles[0] : await this.choose("bundle", bundles);
             this.board.nextTurn();
-            alert('New turn!');
+            if (document.getElementById("turnAlert").checked) { alert('New turn!'); }
         }
     }
 
@@ -102,12 +105,11 @@ export class App {
         } catch (e) { if (e instanceof TypeError) { return } else { throw e } }
         switch (this.wait.type) {
             case "move":
-
                 if (this.board.map[x1][y1] === this.board.I.name) {
                     var pieceInBundle = [...this.bundle].some(piece => JSON.stringify(piece) === JSON.stringify([x1, y1]));
                     if (pieceInBundle) {
                         this.pos = [x1, y1];
-                        this.show(this.board.I.name);
+                        this.show('need', 'noNeed');
                         this.showBundle(this.board.I.name, this.bundle);
                         setColor(this.table.rows[y1].cells[x1], `focus-${this.board.I.name}`);
                     }
@@ -117,14 +119,14 @@ export class App {
                         this.wait.func({ "piece": this.pos, "dir": [x1 - x2, y1 - y2] });
                         this.pos = null;
 
-                        this.show(this.board.I.name);
+                        this.show('need', 'noNeed');
                     }
                 }
                 break;
             case "bundle":
                 if (this.board.map[x1][y1] === this.board.you.name) {
                     var bundle = this.board.findBundleFromPos([x1, y1]);
-                    this.show(this.board.you.name);
+                    this.show('light', 'need');
                     this.showBundle(this.board.you.name, bundle);
                     if (JSON.stringify(this.pos) === JSON.stringify([x1, y1])) { this.wait.func(bundle); }
                     else { this.pos = [x1, y1]; }
@@ -139,7 +141,6 @@ export class App {
     }
 
     win(player) {
-        console.log(player, '빼애애애애액');
         document.getElementById("status").innerText = `Status : ${player.name} win`;
     }
 }

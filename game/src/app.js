@@ -11,6 +11,13 @@ export class App {
 
         this.make();
         this.play();
+
+        window.onresize = this.resize;
+    }
+
+    resize(event) {
+        var innerWidth = window.innerWidth;
+        console.log(innerWidth);
     }
 
     make() {
@@ -62,6 +69,11 @@ export class App {
                 } else {
                     this.bundle = this.board.findPieces(I);
                     moves = this.board.findBundleMove(I, this.bundle);
+                    if (moves.size === 0) { // bug fix
+                        this.win(you);
+                        this.show('need', 'need');
+                        return
+                    }
                 }
             }
             this.show('need', 'noNeed');

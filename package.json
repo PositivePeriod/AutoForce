@@ -4,7 +4,9 @@
   "description": "Turn-based strategy game",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node game/server.js",
+    "devs": "nodemon --watch game node game/server.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +17,14 @@
   "bugs": {
     "url": "https://github.com/PositivePeriod/AutoForce/issues"
   },
-  "homepage": "https://github.com/PositivePeriod/AutoForce#readme"
+  "homepage": "https://github.com/PositivePeriod/AutoForce#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "shortid": "^2.2.16",
+    "socket.io": "^4.3.0",
+    "socket.io-client": "^4.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.13"
+  }
 }

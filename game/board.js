@@ -1,20 +1,34 @@
-export class ClientGameBoard {
-    constructor(width, height, playerAID, playerBID) {
+class ServerGameBoard {
+    constructor(width, height, playerIDA, playerIDB, socketA, socketB) {
         this.width = width;
         this.height = height;
 
+        this.turn = 1;
         this.players = [
-            { "name": 'A', "playerID": playerAID, "dirs": [[1, 0], [-1, 0], [0, 1]], "pieces": this.width },
-            { "name": 'B', "playerID": playerBID, "dirs": [[1, 0], [-1, 0], [0, -1]], "pieces": this.width },
+            { "name": 'A', "playerID": playerIDA, "dirs": [[1, 0], [-1, 0], [0, 1]], "pieces": this.width, "socket":socketA},
+            { "name": 'B', "playerID": playerIDB, "dirs": [[1, 0], [-1, 0], [0, -1]], "pieces": this.width, "socket":socketB},
         ];
         this.map = Array.from(Array(this.width), () => new Array(this.height).fill(null));
         this.colorMap = Array.from(Array(this.width), () => new Array(this.height).fill(null));
+        // left bottom (0,0), right bottom(width-1,0), left top (0,height-1), right top(width-1,height-1)
+        for (var i = 0; i < this.width; i++) {
+            this.map[i][0] = 'A';
+            this.map[i][this.height - 1] = 'B';
+        }
+    }
 
-        // // left bottom (0,0), right bottom(width-1,0), left top (0,height-1), right top(width-1,height-1)
-        // for (var i = 0; i < this.width; i++) {
-        //     this.map[i][0] = 'A';
-        //     this.map[i][this.height - 1] = 'B';
-        // }
+    color(IColor, youColor) {
+        for (var i = 0; i < this.width; i++) {
+            for (var j = 0; j < this.height; j++) {
+                this.colorMap[i][j] = (this.map[i][j] === this.I.name ? IColor : youColor) + `-${this.map[i][j]}`;
+            }
+        }
+    }
+
+    colorBundle(playerName, bundle) {
+        for (const [x, y] of bundle) {
+            this.colorMap[x][y] = `choice-${playerName}`;
+        }
     }
 
     nextTurn() { this.turn++ }
@@ -109,3 +123,5 @@ export class ClientGameBoard {
         return false
     }
 }
+
+module.exports = ServerGameBoard;

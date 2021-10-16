@@ -1,12 +1,14 @@
 class ServerGameBoard {
-    constructor(width, height, playerIDA, playerIDB, socketA, socketB) {
+    constructor(width, height, socketA, socketB) {
         this.width = width;
         this.height = height;
+        const [playerIDA, playerIDB] = [socketA.data.playerID, socketB.data.playerID];
+        const [playerNameA, playerNameB] = [socketA.data.playerName, socketB.data.playerName];
 
         this.turn = 1;
         this.players = [
-            { "name": 'A', "playerID": playerIDA, "dirs": [[1, 0], [-1, 0], [0, 1]], "pieces": this.width, "socket":socketA},
-            { "name": 'B', "playerID": playerIDB, "dirs": [[1, 0], [-1, 0], [0, -1]], "pieces": this.width, "socket":socketB},
+            { "name": 'A', "dirs": [[1, 0], [-1, 0], [0, 1]], "pieces": this.width, "socket": socketA, "playerID": playerIDA, "playerName": playerNameA, },
+            { "name": 'B', "dirs": [[1, 0], [-1, 0], [0, -1]], "pieces": this.width, "socket": socketB, "playerID": playerIDB, "playerName": playerNameB, },
         ];
         this.map = Array.from(Array(this.width), () => new Array(this.height).fill(null));
         this.colorMap = Array.from(Array(this.width), () => new Array(this.height).fill(null));

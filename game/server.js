@@ -1,7 +1,8 @@
 const express = require("express");
 const socketio = require("socket.io");
-const shortid = require("shortid");
+const { nanoid } = require('nanoid');
 const ServerGameBoard = require("./board");
+const { PostgresqlDB, LocalDB } = require("./database");
 
 var app = express();
 app.use("/", express.static(__dirname));
@@ -9,87 +10,36 @@ const port = process.env.PORT || 5000;
 var server = app.listen(port, () => { console.log(`Bundle : http://localhost:${port}`); });
 var io = socketio(server)
 
-const MSG = Object.freeze({
-    CONNECT_SERVER: "connect",
-    JOIN_PLAY: "joinPlay",
-    REGISTER: "register",
-
-    DISCONNECT_SERVER: "disconnect",
-});
-
-const serverDB = new Map([]); //  playerName, playerID - 진짜 db로 바꿀 것
-const onlineSocketID = []; // socketID
-const gameQueue = [];
-
-async function joinPlay() {
-    console.log(this.id, 'waiting in the queue');
-    gameQueue.push(this.id);
-    if (gameQueue.length >= 2) {
-        var player1socketID = gameQueue.shift();
-        var player2socketID = gameQueue.shift();
-        await startGame(player1socketID, player2socketID);
-    }
-}
-
-async function startGame(socketIDA, socketIDB) {
-    console.log('startGame between', socketIDA, 'and', socketIDB);
-    var gameID = shortid.generate();
-    var socketA = await io.sockets.sockets.get(socketIDA);
-    var socketB = await io.sockets.sockets.get(socketIDB);
-    var playerIDA = socketA.data.playerID;
-    var playerIDB = socketB.data.playerID;
-    socketA.join(gameID);
-    socketB.join(gameID);
-    io.to(gameID).emit('startGame', { "id": gameID, "players": [playerIDA, playerIDB] });
-    await play(gameID, socketA, socketB, playerIDA, playerIDB);
-}
-
-async function play(gameID, socketA, socketB, playerIDA, playerIDB) {
+async function play(gameID, socketA, socketB) {
     const [width, height] = [5, 5];
-    const board = new ServerGameBoard(width, height, playerIDA, playerIDB, socketA, socketB);
+    const board = new ServerGameBoard(width, height, socketA, socketB);
     var bundle = board.findBundles(board.I)[0];
     while (true) {
-        var I = board.I;
-        var you = board.you;
+        var [I, you] = [board.I, board.you];
         var moves = board.findBundleMove(I, bundle); // already chosen bundle
-
         if (moves.length === 0) {
             board.deleteBundle(I, bundle);
-            if (board.checkNoPiece(I)) {
-                win(you);
-                board.color('need', 'need');
-                show(gameID, board);
-                return
-            } else {
-                bundle = board.findPieces(I);
+            if (board.checkNoPiece(I)) { win(gameID, you, board); }
+            else {
+                bundle = board.findPieces(I); // use all pieces as bundle in pieces
                 moves = board.findBundleMove(I, bundle);
-                if (moves.length === 0) { // bug fix
-                    win(you);
-                    board.color('need', 'need');
-                    show(gameID, board);
-                    return
-                }
+                if (moves.length === 0) { win(gameID, you, board); }
             }
         }
         board.color('need', 'noNeed');
         board.colorBundle(I.name, bundle);
         show(gameID, board);
-        alertSocket(gameID, 'status', `Status : ${I.playerID} move piece`)
+        alertSocket(gameID, 'status', `Status : ${I.playerName} move piece`)
 
         if (moves.length === 1) {
             alertSocket(gameID, 'selectionAlert', 'Select move automatically because the valid move is unique');
             var { piece, dir } = moves[0];
         } else { var { piece, dir } = await choose(I, "move", moves); }
         board.movePiece(I, piece, dir);
-        if (board.checkBaseEnter(I)) {
-            win(I);
-            board.color('need', 'need');
-            return
-        }
+        if (board.checkBaseEnter(I)) { win(gameID, I, board); }
         board.color('light', 'need');
         show(gameID, board);
-
-        alertSocket(gameID, 'status', `Status : ${I.playerID} select bundle`)
+        alertSocket(gameID, 'status', `Status : ${I.playerName} select bundle`)
         var bundles = board.findBundles(you);
         if (bundles.length === 1) {
             alertSocket(gameID, 'selectionAlert', 'Select bundle automatically because the bundle is unique');
@@ -100,18 +50,16 @@ async function play(gameID, socketA, socketB, playerIDA, playerIDB) {
     }
 }
 
-function win(gameID, player) {
+function win(gameID, player, board) {
     io.to(gameID).emit('sendMSG', { "type": "win", "msg": `${player.playerID} wins`, "data": player.playerID });
+    board.color('need', 'need'); show(gameID, board); return;
     // process db to store result
 }
 
 function show(gameID, board) {
-    var data = {
-        "turn": board.turn, "playerMap": board.map, "colorMap": board.colorMap
-    }
+    var data = { "turn": board.turn, "playerMap": board.map, "colorMap": board.colorMap }
     io.to(gameID).emit('updateGame', data);
 }
-
 
 async function choose(player, type, possibleData) {
     var resolveFunc = null;
@@ -146,64 +94,127 @@ async function choose(player, type, possibleData) {
     return result
 }
 
-
 function alertSocket(gameID, type, msg) { io.to(gameID).emit('sendMSG', { "type": type, "msg": msg }); }
 
-function disconnect(reason) {
-    console.log(this.id, ' left because ', reason)
-    onlineSocketID.delete(this.id);
-    // socket.leave('online'); - 이미 disconnect라 나가진 듯
-    console.log('server player#', onlineSocketID.length)
-    io.to('online').emit('info', { "onlinePlayer": onlineSocketID.length });
-    // leave all games, 가능한 모든 room에서 나가기
-}
+const DB = new PostgresqlDB();
+const onlineSockets = new Set([]); // Array[socketID]
+const publicGameQueue = []; // Array[socketID] waiting for game
 
-io.on(MSG.CONNECT_SERVER, (socket) => {
+const validPlayerName = (name) => typeof name === 'string' && 3 <= name.length && name.length <= 20 && /^[0-9a-zA-Z_-]+$/.test(name);
+const validPlayerID = (id) => typeof id === 'string' && id.length === 21 && /^[0-9a-zA-Z_-]+$/.test(id);
+const callbackToSend = (socket, event, callback) => (response) => { if (callback) { callback(response); } else { socket.emit(event, response); }; };
+const sendTosendError = (send) => (msg) => { console.log('Error', msg); send({ "success": false, "msg": "Server Problem" }); }
+
+io.on("connect", (socket) => {
     console.log('Connected Socket : ', socket.id);
-    onlineSocketID.push(socket.id);
     socket.data.registered = false;
 
-    socket.on('register', (data) => {
+    socket.on('register', async (data, callback) => {
         var { type, playerName, playerID } = data;
-        if (socket.data.registered) { socket.emit('register', { "success": false, "msg": "Already registered" }); return; }
+
+        // callback 실행시 매우 큰 보안 문제 발생 가능성? , 같은 채널로 보낸 이후 반대쪽에 socket.once로 받아서 promise 처리하는 것이 더 안전할 것
+        const send = callbackToSend(socket, 'register', callback);
+        const sendError = sendTosendError(send);
+        const saveRegisteredInfo = (name, id) => { console.log(`Socket Registered as ${name}`); socket.data.playerID = name; socket.data.playerName = id; socket.data.registered = true; }
+
+        const validType = typeof type === 'string' && ['signIn', 'signUp'].includes(type);
+        if (!validType) { send({ "success": false, "msg": "Invalid type" }); return; }
+        if (!validPlayerName(playerName)) { send({ "success": false, "msg": "Invalid playerName" }); return; }
+        if (socket.data.registered) { send({ "success": false, "msg": "Already registered" }); return; }
         switch (type) {
             case "signIn":
-                if (!serverDB.has(playerName) && serverDB.has(playerName) === playerID) {
-                    socket.emit('register', { "success": false, "msg": "Inexistent playerName" });
-                } else if (serverDB.has(playerName) !== playerID) {
-                    socket.emit('register', { "success": false, "msg": "Invalid playerID" });
-                } else {
-                    // login!
-                    socket.data.playerID = playerID;
-                    socket.data.registered = true;
-                    socket.emit('register', { "success": true, "msg": null });
-                }
+                if (!validPlayerID(playerID)) { send({ "success": false, "msg": "Invalid playerName" }); return; }
+                var checkExistence = await DB.existName(playerName);
+                if (!checkExistence.success) { sendError('signIn checkExistence'); return; }
+                if (!checkExistence.data) { send({ "success": false, "msg": "Inexistent playerName" }); return; }
+
+                var checkValidity = await DB.getPlayerByName(playerName);
+                if (!checkValidity.success) { sendError('signIn checkValidity'); return; }
+                if (checkValidity.data.id !== playerID) { send({ "success": false, "msg": "Invalid playerID" }); return; }
+
+                saveRegisteredInfo(playerName, playerID);
+                send({ "success": true, "msg": null }); return;
                 break;
             case "signUp":
-                if (serverDB.has(playerName)) {
-                    socket.emit('register', { "success": false, "msg": "Existent playerName" });
-                } else {
-                    // 실제로는 이메일 등록 안 하면 지워지는 걸로?
-                    const playerID = shortid.generate();
-                    serverDB.set(playerName, playerID);
-                    // login!
-                    socket.data.playerID = playerID;
-                    socket.data.registered = true;
-                    socket.emit('register', { "success": true, "msg": null, "playerID": playerID });
-                }
+                var checkExistence = await DB.existName(playerName);
+                if (!checkExistence.success) { sendError('signUp checkExistence'); return; }
+                if (checkExistence.data) { send({ "success": false, "msg": "Existent playerName" }); return; }
+
+                // 실제로는 이메일 등록 안 하고 오래 지나면 지워지는 걸로? -> 등록하도록 안내!
+                var playerID = nanoid();
+                let result = await DB.setPlayer({ playerName: playerName, playerID: playerID });
+                if (!result.success) { sendError('signUp result'); return; }
+
+                saveRegisteredInfo(playerName, playerID);
+                send({ "success": true, "msg": null, "playerID": playerID }); return;
                 break;
             default:
+                console.log('Unexpected type not in [signIn, signUp] : ', type)
+                send({ "success": false, "msg": "Invalid type" }); return;
                 break;
         }
+    });
 
-        if (socket.data.registered) {
-            socket.join('online');
-            console.log('#Server Player : ', onlineSocketID.length)
-            io.to('online').emit('info', { "onlinePlayer": onlineSocketID.length });
-            socket.on(MSG.JOIN_PLAY, joinPlay.bind(socket));
-            socket.on(MSG.DISCONNECT_SERVER, disconnect.bind(socket));
+    socket.on('online', (callback) => { // not open api? 필요없을지도? - game 하겠다는 의지를 가진 사람으로 한정시켜도 될 듯
+        const send = callbackToSend(socket, 'online', callback);
+        if (!socket.data.registered) { send({ "success": false, "msg": "Not registered" }); return; }
+        if (socket.data.online) { send({ "success": false, "msg": "Already online" }); return; }
+        socket.data.online = true;
+        send({ "success": true, "msg": null });
+        // make into class function
+        onlineSockets.add(socket.id);
+        socket.join('online');
+        console.log('#Server Player : ', onlineSockets.size);
+        io.to('online').emit('info', { "onlinePlayer": onlineSockets.size });
+    });
+
+    socket.on("publicGame", async (callback) => {
+        const send = callbackToSend(socket, 'publicGame', callback);
+        if (!socket.data.registered) { send({ "success": false, "msg": "Not registered" }); return; }
+        if (!socket.data.online) { send({ "success": false, "msg": "Not online" }); return; }
+        if (publicGameQueue.includes(socket.id)) { send({ "success": true, "msg": "Success but already joined" }); return; }
+        publicGameQueue.push(socket.id);
+        send({ "success": true, "msg": null });
+        console.log(`Join PublicGameQueue : socketID ${socket.id}`);
+        if (publicGameQueue.length >= 2) {
+            // 가능하다면 async.queue로 바꾸기
+            // 낮은 확률로 3에서 1로 되면서 parallel 문제?, 병렬 문제도... queue 스스로 빼는 것이 나을 듯
+            var [socketIDA, socketIDB] = [publicGameQueue.shift(), publicGameQueue.shift()];
+            var gameID = nanoid();
+            var socketA = await io.sockets.sockets.get(socketIDA); socketA.join(gameID);
+            var socketB = await io.sockets.sockets.get(socketIDB); socketB.join(gameID);
+            console.log(`Game ${gameID} Start : ${socketA.data.playerName} ${socketB.data.playerName}`);
+            io.to(gameID).emit('startGame', { "id": gameID, "players": [socketA.data.playerName, socketB.data.playerName] });
+            await play(gameID, socketA, socketB);
         }
-    })
+    });
+
+    socket.on("playerInfo", async function (data, callback) {
+        const send = callbackToSend(socket, 'playerInfo', callback);
+        const sendError = sendTosendError(send);
+        var { playerName } = data;
+
+        if (!socket.data.registered) { send({ "success": false, "msg": "No registered" }); return; }
+        if (!validPlayerName(playerName)) { send({ "success": false, "msg": "Invalid playerName" }); return; }
+        var { success, data } = await DB.getPlayerByName(playerName);
+        if (!success) { sendError('playerInfo'); return; }
+        if (data === null) { send({ "success": false, "msg": "Inexistent playerName" }); } // TODO rename msg -> data
+        else {
+            var { name, win_game, lose_game, join_date, last_date } = data;
+            var playerInfo = { playerName: name, win: win_game, lose: lose_game, join: join_date, last: last_date, };
+            send({ "success": true, "msg": playerInfo });
+        }
+        return;
+    });
+
+    socket.on("disconnect", (reason) => {
+        console.log(socket.id, ' left because ', reason)
+        onlineSockets.delete(socket.id);
+        console.log('#Server Player : ', onlineSockets.size);
+        io.to('online').emit('info', { "onlinePlayer": onlineSockets.size });
+        // socket.leave('online'); - 이미 disconnect라 나가진 듯
+        // leave all games, 가능한 모든 room에서 나가기
+    });
 });
 
 // 시간 지나면 ping timeout으로 튕기기는 하는데

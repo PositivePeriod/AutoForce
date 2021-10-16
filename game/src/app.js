@@ -78,13 +78,13 @@ export class App {
             }
             this.show('need', 'noNeed');
             this.showBundle(I.name, this.bundle);
-            document.getElementById("status").innerText = `Status : ${I.name} select move`;
+            document.getElementById("status").innerText = `Status : ${I.playerName} select move`;
             if (moves.size === 1 && document.getElementById("uniqueAlert").checked) { alert('Select move automatically because the valid move is unique'); }
             var { piece, dir } = moves.size === 1 ? [...moves][0] : await this.choose("move", [...moves]);
             this.board.movePiece(I, piece, dir);
             if (this.board.checkBaseEnter(I)) { this.win(I); this.show('need', 'need'); return }
             this.show('light', 'need');
-            document.getElementById("status").innerText = `Status : ${I.name} select bundle`;
+            document.getElementById("status").innerText = `Status : ${I.playerName} select bundle`;
             var bundles = this.board.findBundles(you);
             if (bundles.length === 1 && document.getElementById("uniqueAlert").checked) { alert('Select bundle automatically because the bundle is unique'); }
             this.bundle = bundles.length === 1 ? bundles[0] : await this.choose("bundle", bundles);
@@ -153,7 +153,7 @@ export class App {
     }
 
     win(player) {
-        document.getElementById("status").innerText = `Status : ${player.name} win`;
+        document.getElementById("status").innerText = `Status : ${player.playerName} win`;
     }
 }
 

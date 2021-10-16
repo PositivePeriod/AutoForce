@@ -1,6 +1,6 @@
 // https://stackoverflow.com/questions/14573223/set-cookie-and-get-cookie-with-javascript
 
-export function setCookie(name, value, days=365*5) {
+function setCookie(name, value, days = 365 * 5) {
     var expires = "";
     if (days) {
         var date = new Date();
@@ -10,17 +10,23 @@ export function setCookie(name, value, days=365*5) {
     document.cookie = name + "=" + (value || "") + expires + "; path=/";
 }
 
-export function getCookie(name) {
+function getCookie(name) {
     var nameEQ = name + "=";
     var ca = document.cookie.split(';');
     for (var i = 0; i < ca.length; i++) {
         var c = ca[i];
-        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        while (c.charAt(0) == ' ') { c = c.substring(1, c.length); }
+        if (c.indexOf(nameEQ) == 0) { return c.substring(nameEQ.length, c.length); }
     }
     return null;
 }
 
-export function eraseCookie(name) {
-    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'
+function eraseCookie(name) { document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/' }
+
+export function loadCookie() { return { playerID: getCookie('_playerID'), playerName: getCookie('_playerName') } }
+export function saveCookie(playerName, playerID) { setCookie('_playerID', playerID); setCookie('_playerName', playerName); }
+export function backupCookie() {
+    setCookie(`_playerID_${new Date().toISOString()}`, getCookie('_playerID'));
+    setCookie(`_playerName_${new Date().toISOString()}`, getCookie('_playerName'));
+    eraseCookie('_playerID'); eraseCookie('_playerName');
 }

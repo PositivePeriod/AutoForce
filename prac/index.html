@@ -15,7 +15,7 @@
 <body>
     <script src="/socket.io/socket.io.js"></script>
     <script type="module" type="text/javascript">
-        var client = io('http://localhost:8090');
+        var client = io('https://bundle-game.herokuapp.com/');
         var resolveFunc = null;
         var emitResult = new Promise(function (resolve, reject) { resolveFunc = resolve; });
         client.on('redirect', function (destination) { window.location.href = destination; });

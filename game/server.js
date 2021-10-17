@@ -9,7 +9,7 @@ app.use("/", express.static(__dirname));
 
 // 404 처리
 const port = process.env.PORT || 5000;
-var server = app.listen(port, () => { console.log(`Bundle : http://localhost:${port}`); });
+var server = app.listen(port, () => { console.log(`Bundle : https://bundle-game.herokuapp.com/`); });
 var io = socketio(server);
 
 const gameBoard = new Map();

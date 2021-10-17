@@ -11,7 +11,7 @@ class PostgresqlDB {
 
     async start() {
         this.pool = await new Pool({
-            connectionString: process.env.POSTGRESQL_URI,
+            connectionString: process.env.DATABASE_URL,
             ssl: { rejectUnauthorized: false },
             connectionTimeoutMillis: 0,
             idleTimeoutMillis: 10000,

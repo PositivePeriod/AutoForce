@@ -2,13 +2,11 @@ class ServerGameBoard {
     constructor(width, height, socketA, socketB) {
         this.width = width;
         this.height = height;
-        const [playerIDA, playerIDB] = [socketA.data.playerID, socketB.data.playerID];
-        const [playerNameA, playerNameB] = [socketA.data.playerName, socketB.data.playerName];
 
         this.turn = 1;
         this.players = [
-            { "name": 'A', "dirs": [[1, 0], [-1, 0], [0, 1]], "pieces": this.width, "socket": socketA, "playerID": playerIDA, "playerName": playerNameA, },
-            { "name": 'B', "dirs": [[1, 0], [-1, 0], [0, -1]], "pieces": this.width, "socket": socketB, "playerID": playerIDB, "playerName": playerNameB, },
+            { "name": 'A', "dirs": [[1, 0], [-1, 0], [0, 1]], "pieces": this.width, "socket": socketA, "playerName": socketA.data.playerName, "state": null },
+            { "name": 'B', "dirs": [[1, 0], [-1, 0], [0, -1]], "pieces": this.width, "socket": socketB, "playerName": socketB.data.playerName, "state": null },
         ];
         this.map = Array.from(Array(this.width), () => new Array(this.height).fill(null));
         this.colorMap = Array.from(Array(this.width), () => new Array(this.height).fill(null));
@@ -17,6 +15,34 @@ class ServerGameBoard {
             this.map[i][0] = 'A';
             this.map[i][this.height - 1] = 'B';
         }
+        this.ended = false;
+    }
+
+    currentState(){
+        const unknown = this.players.filter((player) => player.state === null);
+        const winner = this.players.filter((player) => player.state === true);
+        const loser = this.players.filter((player) => player.state === false);
+        return {
+            unknownNames: unknown.map(player => player.playerName),
+            winnerNames: winner.map(player => player.playerName),
+            loserNames: loser.map(player => player.playerName)
+        }
+    }
+
+    win(playerName) {
+        const player = this.players.find((player) => player.playerName === playerName);
+        player.state = true;
+        return this.currentState();
+    }
+
+    lose(playerName) {
+        const player = this.players.find((player) => player.playerName === playerName);
+        player.state = false;
+        return this.currentState();
+    }
+
+    end() {
+        this.ended = true;
     }
 
     color(IColor, youColor) {

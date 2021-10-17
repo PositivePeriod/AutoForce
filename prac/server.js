@@ -14,4 +14,6 @@ io.on('connection', function (socket) {
         console.log('Just written in server')
         ack('Response from server! 2');
     });
+    var destination = '/random.html';
+    socket.emit('redirect', destination);
 });

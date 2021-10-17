@@ -18,17 +18,17 @@
         var client = io('http://localhost:8090');
         var resolveFunc = null;
         var emitResult = new Promise(function (resolve, reject) { resolveFunc = resolve; });
+        client.on('redirect', function (destination) { window.location.href = destination; });
         client.emit('ferret', 'tobu', function (func, response) { console.log("Response : ", response); func(response); }.bind(null, resolveFunc));
         console.log("Emit Result : ", await emitResult);
-
         function response(socket, event, ...args) {
             var resolveFunc = null;
             var result = new Promise(function (resolve, reject) { resolveFunc = resolve; });
             socket.emit(event, ...args, function (func, response) { console.log("Response : ", response); func(response); }.bind(null, resolveFunc));
             return result
         }
-        console.log("Emit result using response function : ", await response(client, "ferret", ['any', 'other', 'args', 11111, 20]))
-    </script>
+        console.log("Emit result using response function : ", await response(client, "ferret", ['any', 'other', 'args', 11111, 20]));
+        </script>
 </body>
 
 </html>

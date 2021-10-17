@@ -1,0 +1,31 @@
+<button id="ajaxButton" type="button">Make a request</button>
+<div id=frame></div>
+<script>
+(function() {
+  var httpRequest;
+  document.getElementById("ajaxButton").addEventListener('click', makeRequest);
+
+  function makeRequest() {
+    httpRequest = new XMLHttpRequest();
+
+    if(!httpRequest) {
+      alert('XMLHTTP 인스턴스를 만들 수가 없어요 ㅠㅠ');
+      return false;
+    }
+    httpRequest.onreadystatechange = changeContents;
+    httpRequest.open('GET', 'prac2.html');
+    httpRequest.send();
+  }
+
+  function changeContents() {
+    if (httpRequest.readyState === XMLHttpRequest.DONE) {
+      if (httpRequest.status === 200) {
+        alert(httpRequest.responseText);
+        document.getElementById('frame').innerHTML = httpRequest.responseText;
+      } else {
+        alert('request에 뭔가 문제가 있어요.');
+      }
+    }
+  }
+})();
+</script>

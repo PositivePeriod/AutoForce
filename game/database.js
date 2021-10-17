@@ -68,18 +68,14 @@ class PostgresqlDB {
     }
 
     async updatePlayerByID(playerInfo) {
-        var { playerID, key } = playerInfo;
-        if (!this.database.has(playerID)) { return { "success": true, "data": null } }
-        var command = null;
+        var { playerName, key } = playerInfo;
         switch (key) {
             case 'win':
-                var command = `UPDATE accounts SET win_game = win_game + 1 WHERE id LIKE '${playerID}'`;
-                break;
+                var command = `UPDATE accounts SET win_game = win_game + 1 WHERE name LIKE '${playerName}'`; break;
             case 'lose':
-                var command = `UPDATE accounts SET lose_game = lose_game + 1 WHERE id LIKE '${playerID}'`;
-                break;
+                var command = `UPDATE accounts SET lose_game = lose_game + 1 WHERE name LIKE '${playerName}'`; break;
             default:
-                break;
+                var command = null; break;
         }
         if (command === null) { return { "success": true, "data": null } }
         const { success, data } = await this.execute(command);

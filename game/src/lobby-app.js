@@ -1,40 +1,28 @@
 import { ClientGameBoard } from "./board.js";
 import { setColor } from "./color.js";
 
-export class App {
-    constructor(socket, playerIDA, playerIDB) {
+export class MultiApp {
+    constructor(socket, playerAName, playerBName) {
         this.width = 5;
         this.height = 5;
         this.wait = { "type": null };
         this.pos = null;
 
         this.socket = socket;
-        this.board = new ClientGameBoard(this.width, this.height, playerIDA, playerIDB);
+        this.board = new ClientGameBoard(this.width, this.height, playerAName, playerBName);
 
         this.initDOM();
         this.clickOn();
     }
 
     initDOM() {
-        var label = document.createElement('label');
-        label.innerHTML = '<input type="checkbox" id="turnAlert">Alert for new turn';
-        document.body.appendChild(label);
-        var label = document.createElement('label');
-        label.innerHTML = '<input type="checkbox" id="uniqueAlert">Alert for unique selection';
-        document.body.appendChild(label);
-        var h3 = document.createElement('h3');
-        document.body.appendChild(h3);
-        h3.outerHTML = '<h3 id="turn">Turn : </h3>';
-        var h3 = document.createElement('h3');
-        document.body.appendChild(h3);
-        h3.outerHTML = '<h3 id="status">Status : </h3>';
         this.table = document.createElement("table");
         this.table.setAttribute("id", "game-map")
         for (var i = 0; i < this.width; i++) {
             var row = this.table.insertRow(i);
             for (var j = 0; j < this.height; j++) { row.insertCell(j); }
         }
-        document.body.appendChild(this.table);
+        document.getElementById('playingGameFrame').appendChild(this.table);
     }
 
     update(turn, playerMap, colorMap) {

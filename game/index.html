@@ -5,28 +5,62 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome-1" />
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-    <meta name="title" content="AutoForce" />
+    <meta name="title" content="Bundle" />
     <meta name="author" content="Jeuk Hwang">
-    <meta name="description" content="Force your opponent to move and reach their base to win">
-    <title>AutoForce</title>
+    <meta name="description" content="Turn-based strategy game">
+    <title>Bundle</title>
 
     <!--style-->
-    <link rel="stylesheet" type="text/css" href="style.css">
-
+    <link rel="stylesheet" type="text/css" href="./style.css">
 </head>
 
 <body>
-    <h1>AutoForce <a href="./rule.html">Rule</a></h1>
-    <label><input type="checkbox" id="turnAlert" checked>Alert for new turn</label>
-    <label><input type="checkbox" id="uniqueAlert" checked>Alert for unique selection</label>
-    <h3 id="turn">Turn :</h3>
-    <h3 id="status">Status :</h3>
-    <!-- todo -->
-    <!-- <label>Width : <input type="number" id="width" name="width" min="3" max="10" value="5"></label>
-    <label>Height : <input type="number" id="width" name="width" min="3" max="10" value="5"></label>
-    <label>Height : <input type="number" id="width" name="width" min="3" max="10" value="5"></label> -->
+    <h1>BUNDLE</h1>
+    <div id="wait">Connect to server...</div>
+    <div id="lobbyFrame">
+        <div id="infoFrame" hidden>
+            <h3 id="name">Player : </h3>
+            <h3 id="statistics">Win / Lose / Ratio : 0 / 0 / 0</h3>
+            <h3 id="onlinePlayer">Online : 0</h3>
+        </div>
+        <div id="registerFrame" hidden>
+            <button id='signup'>Signup</button>
+        </div>
+        <div id="offlineGameFrame">
+            <button id='joinLocal'>Join local game</button>
+        </div>
+        <div id="onlineGameFrame" hidden>
+            <button id='joinPublic'>Join public game</button>
+            <button id='joinCustom'>Join custom game</button>
+            <button id='makeCustom'>Make custom game</button>
+        </div>
+        <div id="publicFrame" hidden>
+            Waiting...
+            <button id='leavePublic'>Leave public game</button>
+        </div>
+        <div id=htmlFrame></div>
+        <div id='log' class="log" hidden>Log : Welcome to BUNDLE</div>
+        <div>
+            <a id=ruleA target="_newtab">Rule</a><br>
+            <a href="./page/version.html" target="_newtab">Version</a><br>
+            <a href="https://open.kakao.com/o/gjQWrAEd">Community</a>
+        </div>
+    </div>
+    <div id="playingGameFrame" hidden>
+        <div id="infoFrame">
+            <h3 id="players">Player vs Player</h3>
+            <h3 id="turn">Turn : 0</h3>
+            <h3 id="status">Status : </h3>
+            <label><input type="checkbox" id="turnAlert">Alert for new turn</label>
+            <label><input type="checkbox" id="uniqueAlert">Alert for unique selection</label>
+        </div>
+        <div id="endGameFrame" hidden>
+            <button id='backToLobby'>Back to lobby</button>
+        </div>
+    </div>
 
-    <script type="module" type="text/javascript" src="src/app.js"></script>
+    <script type="module" type="text/javascript" src="src/lobby.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
 </body>
 
 </html>

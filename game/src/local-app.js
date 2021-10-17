@@ -1,7 +1,7 @@
-import { Board } from "./board.js";
+import { ClientGameBoard } from "./local-board.js";
 import { setColor } from "./color.js";
 
-export class App {
+export class LocalApp {
     constructor() {
         this.width = 5;
         this.height = 5;
@@ -11,13 +11,6 @@ export class App {
 
         this.make();
         this.play();
-
-        window.onresize = this.resize;
-    }
-
-    resize(event) {
-        var innerWidth = window.innerWidth;
-        console.log(innerWidth);
     }
 
     make() {
@@ -25,11 +18,9 @@ export class App {
         this.table.setAttribute("id", "game-map")
         for (var i = 0; i < this.width; i++) {
             var row = this.table.insertRow(i);
-            for (var j = 0; j < this.height; j++) {
-                row.insertCell(j);
-            }
+            for (var j = 0; j < this.height; j++) { row.insertCell(j); }
         }
-        document.body.appendChild(this.table);
+        document.getElementById('playingGameFrame').appendChild(this.table);
         this.clickOn();
     }
 
@@ -53,14 +44,15 @@ export class App {
     }
 
     async play() {
-        this.board = new Board(this.width, this.height);
+        this.board = new ClientGameBoard(this.width, this.height, 'A', 'B');
+        console.log(this.board.I);
         this.bundle = this.board.findBundles(this.board.I)[0];
         while (true) {
             var I = this.board.I;
             var you = this.board.you;
             var moves = this.board.findBundleMove(I, this.bundle); // already chosen bundle
 
-            if (moves.size === 0) {
+            if (moves.length === 0) {
                 this.board.deleteBundle(I, this.bundle);
                 if (this.board.checkNoPiece(I)) {
                     this.win(you);
@@ -69,7 +61,7 @@ export class App {
                 } else {
                     this.bundle = this.board.findPieces(I);
                     moves = this.board.findBundleMove(I, this.bundle);
-                    if (moves.size === 0) { // bug fix
+                    if (moves.length === 0) { // bug fix
                         this.win(you);
                         this.show('need', 'need');
                         return
@@ -79,8 +71,9 @@ export class App {
             this.show('need', 'noNeed');
             this.showBundle(I.name, this.bundle);
             document.getElementById("status").innerText = `Status : ${I.playerName} select move`;
-            if (moves.size === 1 && document.getElementById("uniqueAlert").checked) { alert('Select move automatically because the valid move is unique'); }
-            var { piece, dir } = moves.size === 1 ? [...moves][0] : await this.choose("move", [...moves]);
+            console.log(moves.length, moves);
+            if (moves.length === 1 && document.getElementById("uniqueAlert").checked) { alert('Select move automatically because the valid move is unique'); }
+            var { piece, dir } = moves.length === 1 ? [...moves][0] : await this.choose("move", [...moves]);
             this.board.movePiece(I, piece, dir);
             if (this.board.checkBaseEnter(I)) { this.win(I); this.show('need', 'need'); return }
             this.show('light', 'need');
@@ -154,7 +147,12 @@ export class App {
 
     win(player) {
         document.getElementById("status").innerText = `Status : ${player.playerName} win`;
+        document.getElementById('backToLobby').onclick = () => {
+            document.getElementById('endGameFrame').hidden = true;
+            document.getElementById('game-map').remove();
+            document.getElementById('playingGameFrame').hidden = true;
+            document.getElementById('lobbyFrame').hidden = false;
+        };
+        document.getElementById('endGameFrame').hidden = false;
     }
 }
-
-window.onload = () => { new App(); };

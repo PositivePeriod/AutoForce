@@ -24,7 +24,8 @@ async function main() {
     };
 
     // Connection
-    var socket = io(window.location.host); socket.data = {};
+    const socketProtocol = (window.location.protocol.includes('https')) ? 'wss' : 'ws';
+    var socket = io(`${socketProtocol}://${window.location.host}`); socket.data = {};
     socket.on("connect", () => {
         // updateLog('Connect Server connection as ' + socket.id);
     });

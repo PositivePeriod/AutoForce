@@ -139,4 +139,6 @@ class LocalDB {
     }
 }
 
-module.exports = { PostgresqlDB, LocalDB }
+const ServerDB = (process.env.NODE_ENV === 'developement') ? LocalDB : PostgresqlDB;
+
+module.exports = { ServerDB }

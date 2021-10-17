@@ -2,7 +2,7 @@ const express = require("express");
 const socketio = require("socket.io");
 const { nanoid } = require('nanoid');
 const ServerGameBoard = require("./board");
-const { PostgresqlDB, LocalDB } = require("./database");
+const { ServerDB } = require("./database");
 
 var app = express();
 app.use("/", express.static(__dirname));
@@ -136,7 +136,7 @@ async function choose(player, type, possibleData) {
 
 function alertSocket(gameID, type, msg) { io.to(gameID).emit('sendMSG', { "type": type, "msg": msg }); }
 
-const DB = new PostgresqlDB();
+const DB = new ServerDB();
 const onlineSockets = new Set([]); // Array[socketID]
 const publicGameQueue = []; // Array[socketID] waiting for game
 

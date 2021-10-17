@@ -18,4 +18,6 @@ games random id 가능하게 바꾸기
 
 url로 바로 들어갈 수 있게 만들기
 
-탈주 잡기?
+탈주 잡기? - 패작 관련 eol ranking
+
+packet 최소화

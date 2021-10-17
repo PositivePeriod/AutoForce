@@ -1,20 +1,62 @@
-export class ClientGameBoard {
-    constructor(width, height, playerAName, playerBName) {
+class ServerGameBoard {
+    constructor(width, height, socketA, socketB) {
         this.width = width;
         this.height = height;
 
+        this.turn = 1;
         this.players = [
-            { "name": 'A', "playerName": playerAName, "dirs": [[1, 0], [-1, 0], [0, 1]], "pieces": this.width },
-            { "name": 'B', "playerName": playerBName, "dirs": [[1, 0], [-1, 0], [0, -1]], "pieces": this.width },
+            { "name": 'A', "dirs": [[1, 0], [-1, 0], [0, 1]], "pieces": this.width, "socket": socketA, "playerName": socketA.data.playerName, "state": null },
+            { "name": 'B', "dirs": [[1, 0], [-1, 0], [0, -1]], "pieces": this.width, "socket": socketB, "playerName": socketB.data.playerName, "state": null },
         ];
         this.map = Array.from(Array(this.width), () => new Array(this.height).fill(null));
         this.colorMap = Array.from(Array(this.width), () => new Array(this.height).fill(null));
+        // left bottom (0,0), right bottom(width-1,0), left top (0,height-1), right top(width-1,height-1)
+        for (var i = 0; i < this.width; i++) {
+            this.map[i][0] = 'A';
+            this.map[i][this.height - 1] = 'B';
+        }
+        this.ended = false;
+    }
 
-        // // left bottom (0,0), right bottom(width-1,0), left top (0,height-1), right top(width-1,height-1)
-        // for (var i = 0; i < this.width; i++) {
-        //     this.map[i][0] = 'A';
-        //     this.map[i][this.height - 1] = 'B';
-        // }
+    currentState(){
+        const unknown = this.players.filter((player) => player.state === null);
+        const winner = this.players.filter((player) => player.state === true);
+        const loser = this.players.filter((player) => player.state === false);
+        return {
+            unknownNames: unknown.map(player => player.playerName),
+            winnerNames: winner.map(player => player.playerName),
+            loserNames: loser.map(player => player.playerName)
+        }
+    }
+
+    win(playerName) {
+        const player = this.players.find((player) => player.playerName === playerName);
+        player.state = true;
+        return this.currentState();
+    }
+
+    lose(playerName) {
+        const player = this.players.find((player) => player.playerName === playerName);
+        player.state = false;
+        return this.currentState();
+    }
+
+    end() {
+        this.ended = true;
+    }
+
+    color(IColor, youColor) {
+        for (var i = 0; i < this.width; i++) {
+            for (var j = 0; j < this.height; j++) {
+                this.colorMap[i][j] = (this.map[i][j] === this.I.name ? IColor : youColor) + `-${this.map[i][j]}`;
+            }
+        }
+    }
+
+    colorBundle(playerName, bundle) {
+        for (const [x, y] of bundle) {
+            this.colorMap[x][y] = `choice-${playerName}`;
+        }
     }
 
     nextTurn() { this.turn++ }
@@ -109,3 +151,5 @@ export class ClientGameBoard {
         return false
     }
 }
+
+module.exports = ServerGameBoard;

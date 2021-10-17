@@ -1,3 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700&display=swap');
+
+* { 
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+.multiline {
+    white-space: pre-wrap;
+}
+
 .hidden {
     display: none;
 }
@@ -14,15 +24,20 @@ html,
 body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
-    overscroll-behavior: none;
+    /* overflow: hidden; */
+    /* overscroll-behavior: none; */
+}
+
+button {
+    margin: 3px;
+    padding: 3px;
 }
 
 a {
-    display: inline;
+    /* display: inline; */
     /* text-decoration: none; */
     color: black;
-    font-size: 24px;
+    /* font-size: 24px; */
 }
 
 #game-map {
@@ -55,4 +70,11 @@ a {
 
 #game-map td .selected:hover {
     cursor: pointer;
+}
+
+.log{
+    background-color: black;
+    color: white;
+    overflow-y: scroll;
+    height: 150px;
 }

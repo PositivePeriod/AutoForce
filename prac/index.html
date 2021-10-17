@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome-1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+    <meta name="title" content="AutoForce" />
+    <meta name="author" content="Jeuk Hwang">
+    <meta name="description" content="Force your opponent to move and reach their base to win">
+    <title>Practice</title>
+
+</head>
+
+<body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" type="text/javascript">
+        var client = io('http://localhost:8090');
+        var resolveFunc = null;
+        var emitResult = new Promise(function (resolve, reject) { resolveFunc = resolve; });
+        client.on('redirect', function (destination) { window.location.href = destination; });
+        client.emit('ferret', 'tobu', function (func, response) { console.log("Response : ", response); func(response); }.bind(null, resolveFunc));
+        console.log("Emit Result : ", await emitResult);
+        function response(socket, event, ...args) {
+            var resolveFunc = null;
+            var result = new Promise(function (resolve, reject) { resolveFunc = resolve; });
+            socket.emit(event, ...args, function (func, response) { console.log("Response : ", response); func(response); }.bind(null, resolveFunc));
+            return result
+        }
+        console.log("Emit result using response function : ", await response(client, "ferret", ['any', 'other', 'args', 11111, 20]));
+        </script>
+</body>
+
+</html>

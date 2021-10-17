@@ -3,18 +3,18 @@ export class ClientGameBoard {
         this.width = width;
         this.height = height;
 
+        this.turn = 1;
         this.players = [
             { "name": 'A', "playerName": playerAName, "dirs": [[1, 0], [-1, 0], [0, 1]], "pieces": this.width },
             { "name": 'B', "playerName": playerBName, "dirs": [[1, 0], [-1, 0], [0, -1]], "pieces": this.width },
         ];
         this.map = Array.from(Array(this.width), () => new Array(this.height).fill(null));
         this.colorMap = Array.from(Array(this.width), () => new Array(this.height).fill(null));
-
         // // left bottom (0,0), right bottom(width-1,0), left top (0,height-1), right top(width-1,height-1)
-        // for (var i = 0; i < this.width; i++) {
-        //     this.map[i][0] = 'A';
-        //     this.map[i][this.height - 1] = 'B';
-        // }
+        for (var i = 0; i < this.width; i++) {
+            this.map[i][0] = 'A';
+            this.map[i][this.height - 1] = 'B';
+        }
     }
 
     nextTurn() { this.turn++ }
@@ -24,6 +24,7 @@ export class ClientGameBoard {
     get you() { return this.players[(this.turn + 1) % this.players.length]; }
 
     findBundles(player) {
+        console.log(player);
         var visited = Array.from(Array(this.width), () => new Array(this.height).fill(false));
         var bundles = [];
         for (let i = 0; i < this.width; i++) {

@@ -89,9 +89,24 @@ export class LocalApp {
     choose(type, data) { // data : Array
         return new Promise(function (resolve, reject) {
             var check = (chosenDatum) => {
-                if (data.some(datum => JSON.stringify(datum) === JSON.stringify(chosenDatum))) {
-                    this.wait = { "type": null };
-                    resolve(chosenDatum);
+                switch (this.wait.type) {
+                    case "move":
+                        if (data.some((datum) => { return JSON.stringify(datum) === JSON.stringify(chosenDatum) })) {
+                            this.wait = { "type": null };
+                            resolve(chosenDatum);
+                        }
+                        break;
+                    case "bundle":
+                        if (data.some((datum) => {
+                            datum.sort(); chosenDatum.sort();
+                            return JSON.stringify(datum) === JSON.stringify(chosenDatum)
+                        })) {
+                            this.wait = { "type": null };
+                            resolve(chosenDatum);
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
             this.wait = { "type": type, "func": check, "data": data };
@@ -133,7 +148,7 @@ export class LocalApp {
                     var bundle = this.board.findBundleFromPos([x1, y1]);
                     this.show('light', 'need');
                     this.showBundle(this.board.you.name, bundle);
-                    if (JSON.stringify(this.pos) === JSON.stringify([x1, y1])) { this.wait.func(bundle); }
+                    if (JSON.stringify(this.pos) === JSON.stringify([x1, y1])) { console.log('send bundle'); this.wait.func(bundle); }
                     else { this.pos = [x1, y1]; }
                 }
                 break;

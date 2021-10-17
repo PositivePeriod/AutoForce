@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "node game/server.js",
+    "start": "node game/server.js",
     "devs": "nodemon --watch game node game/server.js"
   },
   "repository": {

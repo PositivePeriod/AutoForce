@@ -21,3 +21,6 @@ url로 바로 들어갈 수 있게 만들기
 탈주 잡기? - 패작 관련 eol ranking
 
 packet 최소화
+
+## LICENSE
+CC-BY-NC-SA
